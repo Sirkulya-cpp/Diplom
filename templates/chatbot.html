@@ -4,20 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body>
-    <h1>Chat with AI</h1>
-    <form method="POST">
-        <label for="prompt">Your question:</label><br>
-        <input type="text" id="prompt" name="prompt" style="width: 100%; padding: 10px;" required>
-        <button type="submit" style="margin-top: 10px;">Send</button>
-    </form>
-    {% if user_prompt %}
-        <h3>You:</h3>
-        <p>{{ user_prompt }}</p>
-        <h3>AI:</h3>
-        <p>{{ bot_response }}</p>
-    {% endif %}
-    <p><a href="/">Go Back to Home</a></p>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">DataViz App</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <div class="text-center">
+            <h1 class="display-4 text-primary">Chat with AI</h1>
+            <p class="lead text-secondary">Ask anything and get an intelligent response.</p>
+        </div>
+
+        <!-- Chat Form -->
+        <div class="row justify-content-center my-4">
+            <div class="col-md-6">
+                <form method="POST" class="card p-4 shadow-sm bg-white">
+                    <div class="mb-4">
+                        <label for="prompt" class="form-label">Your question:</label>
+                        <input type="text" id="prompt" name="prompt" class="form-control" placeholder="Type your question here..." required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Send</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Chat History -->
+        {% if user_prompt %}
+        <div class="row justify-content-center my-4">
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm bg-white">
+                    <h3 class="text-secondary">You:</h3>
+                    <p class="text-dark">{{ user_prompt }}</p>
+                    <h3 class="text-secondary">AI:</h3>
+                    <p class="text-dark">{{ bot_response }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Back to Home -->
+        <div class="text-center my-4">
+            <a href="/" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Go Back to Home
+            </a>
+        </div>
+    </div>
 </body>
 </html>

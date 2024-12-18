@@ -1,28 +1,32 @@
-from flask import Flask, render_template, request, jsonify
-from dotenv import load_dotenv
-import pandas as pd
-import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
 import os
+
+import pandas as pd
+import plotly.express as px
+
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, send_from_directory
 from openai import OpenAI
+
 
 load_dotenv()
 
 OPEN_AI_API_KEY = os.getenv('OPEN_AI_API_KEY')
-
-# Flask app
-app = Flask(__name__)
-
-# Path to the CSV file
 CSV_PATH = "customer_shopping_data.csv"
 
-# OpenAI API key
-ai_client = OpenAI(api_key=OPEN_AI_API_KEY)
+
+ai_client = OpenAI(api_key = OPEN_AI_API_KEY)
+app = Flask(__name__)
+
+
+# Helper function for favicon redering
+@app.route('/favicon.svg')
+def favicon():
+    return send_from_directory('static', 'favicon.svg', mimetype='image/svg+xml')
+
 
 # Helper function to generate plot from the CSV data
 def generate_plot_from_csv():
-    """Generate plots from the CSV file."""
+    """Generate interactive plots from the CSV file using Plotly with transparent backgrounds."""
     try:
         # Load CSV file
         df = pd.read_csv(CSV_PATH)
@@ -30,33 +34,43 @@ def generate_plot_from_csv():
         # Preprocess data
         df['total_purchase'] = df['price'] * df['quantity']
 
-        # Create a plot
-        fig, ax = plt.subplots(1, 2, figsize=(14, 7))
-
         # Plot 1: Distribution of total purchases
-        df['total_purchase'].plot(kind='hist', bins=20, ax=ax[0], color='skyblue', edgecolor='black')
-        ax[0].set_title('Distribution of Total Purchases')
-        ax[0].set_xlabel('Total Purchase')
-        ax[0].set_ylabel('Frequency')
+        fig1 = px.histogram(
+            df,
+            x='total_purchase',
+            nbins=20,
+            labels={'total_purchase': 'Total Purchase'}
+        )
+        fig1.update_layout(
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis_title="Total Purchase",
+            yaxis_title="Frequency",
+            paper_bgcolor="rgba(0,0,0,0)",  # Transparent background
+            plot_bgcolor="rgba(0,0,0,0)"   # Transparent plot area
+        )
 
         # Plot 2: Average purchase amount by category
-        category_avg = df.groupby('category')['total_purchase'].mean().sort_values()
-        category_avg.plot(kind='bar', ax=ax[1], color='coral', edgecolor='black')
-        ax[1].set_title('Average Purchase Amount by Category')
-        ax[1].set_xlabel('Category')
-        ax[1].set_ylabel('Average Purchase')
+        category_avg = df.groupby('category')['total_purchase'].mean().sort_values().reset_index()
+        fig2 = px.bar(
+            category_avg,
+            x='category',
+            y='total_purchase',
+            labels={'category': 'Category', 'total_purchase': 'Average Purchase'}
+        )
+        fig2.update_layout(
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis_title="Category",
+            yaxis_title="Average Purchase",
+            paper_bgcolor="rgba(0,0,0,0)",  # Transparent background
+            plot_bgcolor="rgba(0,0,0,0)"   # Transparent plot area
+        )
 
-        # Save plot to a string buffer
-        buf = BytesIO()
-        plt.tight_layout()
-        plt.savefig(buf, format="png")
-        buf.seek(0)
-        plot_data = base64.b64encode(buf.getvalue()).decode("utf-8")
-        buf.close()
+        # Combine both plots
+        return fig1.to_html(full_html=False), fig2.to_html(full_html=False)
 
-        return plot_data
     except Exception as e:
-        return str(e)
+        return str(e), ""
+
 
 # Chatbot function
 def ask_chat_gpt(prompt):
@@ -71,15 +85,24 @@ def ask_chat_gpt(prompt):
     except Exception as e:
         return str(e)
 
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
+@app.route("/research")
+def research():
+    """Visualize research process."""
+    return render_template("research.html")
+
+
 @app.route("/visualize")
 def visualize():
     """Visualize data from CSV."""
-    plot_data = generate_plot_from_csv()
-    return render_template("visualize.html", plot_url=plot_data)
+    plot1, plot2 = generate_plot_from_csv()
+    return render_template("visualize.html", plot1=plot1, plot2=plot2)
+
 
 @app.route("/chatbot", methods=["GET", "POST"])
 def chatbot():
@@ -90,6 +113,7 @@ def chatbot():
             response = ask_chat_gpt(user_prompt)
             return render_template("chatbot.html", user_prompt=user_prompt, bot_response=response)
     return render_template("chatbot.html")
+
 
 if __name__ == "__main__":
     # Ensure CSV file exists
